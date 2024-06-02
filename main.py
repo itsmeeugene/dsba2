@@ -9,6 +9,7 @@ def normalize_column(column):
 
 data = pd.read_csv('synthetic_credit_consumers.csv')
 data_clean = data.dropna()
+del data_clean['CustomerID']
 columns_to_normalize = ['Age', 'CreditScore', 'TransactionAmount', 'LoanAmount', 'LatePayments']
 for col in columns_to_normalize:
     data_clean[col] = normalize_column(data_clean[col])
