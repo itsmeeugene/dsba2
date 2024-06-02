@@ -4,79 +4,71 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
 using namespace std;
 
-struct Data {
-    string CustomerID;
-    string Name;
-    int Age;
-    int CreditScore;
-    double TransactionAmount;
-    double LoanAmount;
-    int LatePayments;
 
-
-};
-
-struct SME {
-    string BusinessID;
-    string BusinessName;
-    string Industry;
-    double AnnualRevenue;
-    int CreditScore;
-    int LatePayments;
-
-
-};
-
-vector<Data> readDataFromCSVFile(string filename) {
-    vector<Data> data;
+// Function to read data from a CSV file
+void readCSVFile(const string& filename, vector<Point>& points) {
     ifstream file(filename);
 
-    string line, field;
+    string line, cell;
     while (getline(file, line)) {
-        Data customer;
-        stringstream ss(line);
-        getline(ss, customer.CustomerID, ',');
-        getline(ss, customer.Name, ',');
-        getline(ss, field, ',');
-        customer.Age = stoi(field);
-        getline(ss, field, ',');
-        customer.CreditScore = stoi(field);
-        getline(ss, field, ',');
-        customer.TransactionAmount = stod(field);
-        getline(ss, field, ',');
-        customer.LoanAmount = stod(field);
-        getline(ss, field, ',');
-        customer.LatePayments = stoi(field);
+        stringstream lineStream(line);
+        Point point;
+        int id_point = 0;
+        double value;
+        string name;
 
-        data.push_back(customer);
+        while (getline(lineStream, cell, ',')) {
+            if (!cell.empty()) {
+                if (id_point == 0) {
+                    point.setID(stoi(cell));
+                } else if (id_point == 1) {
+                    name = cell;
+                } else {
+                    value = stod(cell);
+                    point.addValue(value);
+                }
+                id_point++;
+            }
+        }
+
+        // Create a new Point object
+        point.setName(name);
+        points.push_back(point);
     }
 
-    return data;
+    file.close();
 }
 
-vector<SME> readSMEDataFromCSVFile(string filename) {
-    vector<SME> smes;
-    ifstream file(filename);
+// Function to write data to a CSV file
+void writeCSVFile(const string& filename, const vector<Point>& points) {
+    ofstream file(filename);
 
-    string line, field;
-    while (getline(file, line)) {
-        SME sme;
-        stringstream ss(line);
-        getline(ss, sme.BusinessID, ',');
-        getline(ss, sme.BusinessName, ',');
-        getline(ss, sme.Industry, ',');
-        getline(ss, field, ',');
-        sme.AnnualRevenue = stod(field);
-        getline(ss, field, ',');
-        sme.CreditScore = stoi(field);
-        getline(ss, field, ',');
-        sme.LatePayments = stoi(field);
+    for (const auto& point : points) {
+        file << point.getID() << "," << point.getName() << ",";
 
-        smes.push_back(sme);
+        for (int i = 0; i < point.getTotalValues(); i++) {
+            file << point.getValue(i) << ",";
+        }
+
+        file << "\n";
     }
 
-    return smes;
+    file.close();
+}
+
+int main() {
+    string inputFile = "synthetic_credit_consumers.csv";
+    string outputFile = "processed_data.csv";
+
+    vector<Point> points;
+
+    readCSVFile(inputFile, points);
+
+//...
+
+    writeCSVFile(outputFile, points);
+
+    return 0;
 }
