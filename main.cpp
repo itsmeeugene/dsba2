@@ -4,7 +4,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
-
+#include <fstream>
+#include <sstream>
+#include <string>
 using namespace std;
 
 class Point
@@ -152,32 +154,11 @@ public:
             }
 
             if (done) {
-                cout << "Break in iteration " << iter << "\n\n";
+                // cout << "Break in iteration " << iter << "\n\n";
                 break;
             }
 
         }
-
-//        for (const auto& cluster : clusters) {
-//            cout << "Cluster " << cluster.getID() + 1 << endl;
-//            for (int j = 0; j < cluster.getTotalPoints(); j++) {
-//                const Point& point = cluster.getPoint(j);
-//                cout << "Point " << point.getID() + 1 << ": ";
-//                for (int p = 0; p < total_values; p++) {
-//                    cout << point.getValue(p) << " ";
-//                }
-//                if (!point.getName().empty()) {
-//                    cout << "- " << point.getName();
-//                }
-//                cout << endl;
-//            }
-//
-//            cout << "Cluster values: ";
-//            for (int j = 0; j < total_values; j++) {
-//                cout << cluster.getCentralValue(j) << " ";
-//            }
-//            cout << "\n\n";
-//        }
     }
     void printClusters() {
         for (const auto& cluster : clusters) {
@@ -188,44 +169,100 @@ public:
                 for (int p = 0; p < total_values; p++) {
                     cout << point.getValue(p) << " ";
                 }
-                if (!point.getName().empty()) {
-                    cout << "- " << point.getName();
-                }
-                cout << endl;
+                cout << "- " << point.getName() << endl;
             }
-
-            cout << "Cluster values: ";
+            cout << "Size: " << cluster.getTotalPoints() << endl << "Centroid: ";
             for (int j = 0; j < total_values; j++) {
                 cout << cluster.getCentralValue(j) << " ";
+            }
+            cout << endl << "Variance: ";
+            for (int j = 0; j < total_values; j++) {
+                double sum = 0.0;
+                for (int p = 0; p < cluster.getTotalPoints(); p++) {
+                    double diff = cluster.getPoint(p).getValue(j) - cluster.getCentralValue(j);
+                    sum += diff * diff;
+                }
+                double variance = sum / cluster.getTotalPoints();
+                cout << variance << " ";
             }
             cout << "\n\n";
         }
     }
 };
 
+void readCSVFile(const std::string& filename, std::vector<Point>& points, int& total_p, int& total_v) {
+    std::ifstream file(filename);
+    std::string line;
+    int id_point = 0;
 
+    std::getline(file, line);
+    stringstream ss(line);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        total_v++;
+    }
+
+    while (std::getline(file, line)) {
+        stringstream ss(line);
+        std::string token;
+        std::vector<double> values;
+        std::string name;
+
+        std::getline(ss, token, ',');
+        name = token;
+        while (std::getline(ss, token, ',')) {
+            values.push_back(std::stod(token));
+        }
+        points.emplace_back(id_point++, values, name);
+    }
+    total_p = id_point;
+    total_v--;
+    file.close();
+}
+
+void test(const std::string& filename, std::vector<Point>& points, int& total_p, int& total_v, int max_values) {
+    std::ifstream file(filename);
+    std::string line;
+    int id_point = 0;
+
+    std::getline(file, line);
+    stringstream ss(line);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        total_v++;
+    }
+    
+    int i = 0;
+    while (std::getline(file, line) && i < max_values) {
+        stringstream ss(line);
+        std::string token;
+        std::vector<double> values;
+        std::string name;
+
+        std::getline(ss, token, ',');
+        name = token;
+        while (std::getline(ss, token, ',')) {
+            values.push_back(std::stod(token));
+        }
+        points.emplace_back(id_point++, values, name);
+        i++;
+    }
+    total_p = id_point;
+    total_v--;
+    file.close();
+}
 
 int main()
 {
     srand(time(nullptr));
 
-    int total_points, total_values, K, max_iterations, has_name;
-    cin >> total_points >> total_values >> K >> max_iterations >> has_name;
+    string inputFile = "preprocessed_data.csv";
+
+    int total_points = 0, total_values = 0, K = 50, max_iterations = 300;
+
 
     vector<Point> points;
-    for (int i = 0; i < total_points; i++) {
-        vector<double> values(total_values);
-        for (int j = 0; j < total_values; j++) {
-            cin >> values[j];
-        }
-        string point_name;
-        if (has_name) {
-            cin >> point_name;
-            points.emplace_back(i, values, point_name);
-        } else {
-            points.emplace_back(i, values);
-        }
-    }
+    readCSVFile(inputFile, points, total_points, total_values);
 
     KMeans kmeans(K, total_points, total_values, max_iterations);
     kmeans.run(points);
